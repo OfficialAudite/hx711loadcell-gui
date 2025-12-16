@@ -1,6 +1,7 @@
 # HX711 Load Cell UI (Tkinter, Raspberry Pi)
 
-Modern, fullscreen-capable HX711 scale UI with background readings, JSON-based i18n, and a reusable HX711 device module.
+Modern, fullscreen-capable HX711 scale UI with background readings, JSON-based
+i18n, and a reusable HX711 device module.
 
 ## Quick start (Pi)
 
@@ -27,7 +28,8 @@ Modern, fullscreen-capable HX711 scale UI with background readings, JSON-based i
 
 ## Calibration (simple flow)
 
-1) In Settings, set pins/gain if needed. Enter your known weight in grams (e.g., 1000 for 1 kg).
+1) In Settings, set pins/gain if needed. Enter your known weight in grams
+   (e.g., 1000 for 1 kg).
 2) Tap **Calibrate with weight**.  
    - It first tares (clear the scale).  
    - When prompted, place the known weight and confirm.  
@@ -40,7 +42,8 @@ Modern, fullscreen-capable HX711 scale UI with background readings, JSON-based i
 
 ## Language / i18n
 
-- JSON files in `languages/*.json` (ships with `en.json`, `sv.json`). Add more files with same keys; they auto-appear in the selector.
+- JSON files in `languages/*.json` (ships with `en.json`, `sv.json`). Add more
+  files with same keys; they auto-appear in the selector.
 
 ## Reusing the HX711 device code (no GUI)
 
@@ -60,7 +63,9 @@ reader.start()
 
 ## Config & persistence
 
-- Settings and calibration are stored in `config.json` (auto-created): pins, gain, scale, offset, samples, interval, known weight, calibration time/temp/weight, last zero raw.
+- Settings and calibration are stored in `config.json` (auto-created): pins, gain,
+  scale, offset, samples, interval, known weight, calibration time/temp/weight,
+  last zero raw.
 - Saving happens when you calibrate, tare, or apply & start.
 - Add more languages by dropping `languages/<code>.json`.
 
@@ -76,3 +81,12 @@ reader.start()
 - `lib/hx711_device.py` — device + reader thread
 - `lib/app_ui.py` — Tk UI
 - `languages/` — JSON translations (`en.json`, `sv.json`, add more)
+
+## License
+
+GPL-3.0-or-later. See `LICENSE`.
+
+## Credits / Upstream
+
+- Based on the HX711 Python work from Joy-IT (`JoyIT_hx711py`, GPL-2.0) at
+  <https://github.com/joy-it/JoyIT_hx711py>.

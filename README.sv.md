@@ -1,6 +1,7 @@
 # HX711 vågcells‑UI (Tkinter, Raspberry Pi)
 
-Modern UI i helskärmsläge med bakgrundsläsning, JSON-baserad i18n och återanvändbar HX711‑modul.
+Modern UI i helskärmsläge med bakgrundsläsning, JSON-baserad i18n och
+återanvändbar HX711‑modul.
 
 ## Snabbstart (Pi)
 
@@ -27,7 +28,8 @@ Modern UI i helskärmsläge med bakgrundsläsning, JSON-baserad i18n och återan
 
 ## Kalibrering (enkel)
 
-1) I Inställningar: sätt pinnar/gain vid behov. Ange känd vikt i gram (t.ex. 1000 för 1 kg).
+1) I Inställningar: sätt pinnar/gain vid behov. Ange känd vikt i gram
+   (t.ex. 1000 för 1 kg).
 2) Tryck **Kalibrera med vikt**.  
    - Tare körs först (töm vågen).  
    - När du blir ombedd: lägg på vikten och bekräfta.  
@@ -40,7 +42,8 @@ Modern UI i helskärmsläge med bakgrundsläsning, JSON-baserad i18n och återan
 
 ## Språk / i18n
 
-- JSON-filer i `languages/*.json` (levereras med `en.json`, `sv.json`). Lägg till fler filer med samma nycklar; de dyker upp automatiskt i språkvalet.
+- JSON-filer i `languages/*.json` (levereras med `en.json`, `sv.json`). Lägg till
+  fler filer med samma nycklar; de dyker upp automatiskt i språkvalet.
 
 ## Återanvänd HX711 utan GUI
 
@@ -60,7 +63,9 @@ reader.start()
 
 ## Konfiguration & lagring
 
-- Inställningar och kalibrering lagras i `config.json` (skapas automatiskt): pinnar, gain, skala, offset, samples, intervall, känd vikt, kalibreringstid/-temp/-vikt, senaste nollvärde.
+- Inställningar och kalibrering lagras i `config.json` (skapas automatiskt):
+  pinnar, gain, skala, offset, samples, intervall, känd vikt,
+  kalibreringstid/-temp/-vikt, senaste nollvärde.
 - Sparas när du kalibrerar, nollställer eller väljer Apply & Start.
 - Lägg till fler språk genom att lägga till `languages/<code>.json`.
 
@@ -76,3 +81,12 @@ reader.start()
 - `lib/hx711_device.py` — hårdvaru- och trådlogik
 - `lib/app_ui.py` — Tk UI
 - `languages/` — JSON-översättningar (`en.json`, `sv.json`, fler kan läggas till)
+
+## Licens
+
+GPL-3.0-or-later. Se `LICENSE`.
+
+## Tack / Upstream
+
+- Baserad på HX711-Python-arbetet från Joy-IT (`JoyIT_hx711py`, GPL-2.0) på
+  <https://github.com/joy-it/JoyIT_hx711py>.
