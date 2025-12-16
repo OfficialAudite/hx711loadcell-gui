@@ -3,6 +3,7 @@
 Modern, fullscreen-capable HX711 scale UI with background readings, JSON-based i18n, and a reusable HX711 device module.
 
 ## Quick start (Pi)
+
 1) Install deps  
    `sudo apt install python3-gpiozero python3-tk`
 2) Wire HX711 board  
@@ -14,6 +15,7 @@ Modern, fullscreen-capable HX711 scale UI with background readings, JSON-based i
 4) (Optional) Kiosk: uncomment `root.attributes("-fullscreen", True)` in `lib/app_ui.py`.
 
 ## UI overview
+
 - Display: big grams value, raw count, status time.
 - Buttons (main): Start / Stop / Tare / Settings.
 - Settings:
@@ -24,6 +26,7 @@ Modern, fullscreen-capable HX711 scale UI with background readings, JSON-based i
   - Apply & Start, Stop, Tare, Calibrate with weight, Power Up/Down, Quit, Back
 
 ## Calibration (simple flow)
+
 1) In Settings, set pins/gain if needed. Enter your known weight in grams (e.g., 1000 for 1 kg).
 2) Tap **Calibrate with weight**.  
    - It first tares (clear the scale).  
@@ -32,12 +35,15 @@ Modern, fullscreen-capable HX711 scale UI with background readings, JSON-based i
 3) Tap **Apply & Start** (or Start on main) for live readings.
 
 ## Tare
+
 - Tap **Tare** (main or settings). Runs async; updates Offset and status.
 
 ## Language / i18n
+
 - JSON files in `languages/*.json` (ships with `en.json`, `sv.json`). Add more files with same keys; they auto-appear in the selector.
 
 ## Reusing the HX711 device code (no GUI)
+
 ```python
 from lib.hx711_device import HX711, HX711ReaderThread
 
@@ -52,14 +58,21 @@ reader = HX711ReaderThread(hx, samples=8, interval=0.2, callback=on_reading, err
 reader.start()
 ```
 
+## Config & persistence
+
+- Settings and calibration are stored in `config.json` (auto-created): pins, gain, scale, offset, samples, interval, known weight, calibration time/temp/weight, last zero raw.
+- Saving happens when you calibrate, tare, or apply & start.
+- Add more languages by dropping `languages/<code>.json`.
+
 ## Controls / shortcuts
+
 - Ctrl+Q: quit
 - Esc: toggle fullscreen (if enabled)
 - Quit button in Settings (useful in kiosk)
 
 ## Project layout
+
 - `main.py` — entry point
 - `lib/hx711_device.py` — device + reader thread
 - `lib/app_ui.py` — Tk UI
 - `languages/` — JSON translations (`en.json`, `sv.json`, add more)
-

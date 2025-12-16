@@ -10,11 +10,13 @@ from typing import Optional
 
 from lib.hx711_device import HX711, HX711ReaderThread, Reading
 from languages import load_languages
+from lib.config_store import load_config, save_config
 
 
 class HX711App:
     def __init__(self, root: tk.Tk):
         self.root = root
+        self.config = load_config()
         self.lang_data = load_languages()
         default_lang = "en" if "en" in self.lang_data else next(iter(self.lang_data))
         self.lang_var = tk.StringVar(value=default_lang)
@@ -30,19 +32,20 @@ class HX711App:
         self.raw_var = tk.StringVar(value="—")
         self.grams_var = tk.StringVar(value="—")
 
-        self.dout_var = tk.StringVar(value="5")
-        self.sck_var = tk.StringVar(value="6")
-        self.gain_var = tk.StringVar(value="128")
-        self.scale_var = tk.StringVar(value="2280")  # adjust to your calibration
-        self.offset_var = tk.StringVar(value="0")
-        self.samples_var = tk.StringVar(value="8")
-        self.interval_var = tk.StringVar(value="0.2")
-        self.known_weight_var = tk.StringVar(value="1000")  # grams
+        self.dout_var = tk.StringVar(value=str(self.config.get("dout", 5)))
+        self.sck_var = tk.StringVar(value=str(self.config.get("sck", 6)))
+        self.gain_var = tk.StringVar(value=str(self.config.get("gain", 128)))
+        self.scale_var = tk.StringVar(value=str(self.config.get("scale", 2280.0)))
+        self.offset_var = tk.StringVar(value=str(self.config.get("offset", 0.0)))
+        self.samples_var = tk.StringVar(value=str(self.config.get("samples", 8)))
+        self.interval_var = tk.StringVar(value=str(self.config.get("interval", 0.2)))
+        self.known_weight_var = tk.StringVar(value=str(self.config.get("known_weight", 1000.0)))
 
         self.display_frame: Optional[ttk.Frame] = None
         self.settings_frame: Optional[ttk.Frame] = None
 
         self._build_frames()
+        self._eval_calibration_status(initial=True)
 
         # allow exiting via Ctrl+Q (useful during development)
         root.bind("<Control-q>", lambda _: self._quit())
@@ -131,7 +134,20 @@ class HX711App:
             self.display_frame,
             textvariable=self.status_var,
             style="Status.TLabel",
-        ).pack(pady=6)
+        ).pack(pady=4)
+
+        self.cal_status_var = tk.StringVar(value=self._t("cal_status_valid"))
+        self.cal_status_color = tk.StringVar(value="#4caf50")  # green
+        cal_label = ttk.Label(
+            self.display_frame,
+            textvariable=self.cal_status_var,
+            style="Status.TLabel",
+            anchor="center",
+            justify="center",
+        )
+        cal_label.pack(pady=(0, 8))
+        # apply color via custom label config (ttk styles don't map dynamic fg easily)
+        cal_label.configure(foreground=self.cal_status_color.get())
 
         btn_row = ttk.Frame(self.display_frame)
         btn_row.pack(pady=10)
@@ -243,6 +259,7 @@ class HX711App:
             offset = float(self.offset_var.get())
             samples = max(1, int(self.samples_var.get()))
             interval = max(0.05, float(self.interval_var.get()))
+            known_weight = float(self.known_weight_var.get())
         except ValueError:
             messagebox.showerror(self._t("hx_error"), self._t("invalid_input"))
             return
@@ -255,6 +272,19 @@ class HX711App:
         hx.set_scale(scale)
         hx.set_offset(offset)
         self.hx = hx
+
+        self._save_config(
+            {
+                "dout": dout,
+                "sck": sck,
+                "gain": gain,
+                "scale": scale,
+                "offset": offset,
+                "samples": samples,
+                "interval": interval,
+                "known_weight": known_weight,
+            }
+        )
 
         self.reader = HX711ReaderThread(
             hx=self.hx,
@@ -294,6 +324,7 @@ class HX711App:
                 self.hx.tare(times=max(3, int(self.samples_var.get())))
                 self.offset_var.set(str(self.hx.get_offset()))
                 self.status_var.set(self._t("status_tared"))
+                self._save_config({"offset": self.hx.get_offset()})
             except Exception as exc:
                 self.status_var.set(self._t("status_error").format(err=exc))
 
@@ -338,6 +369,7 @@ class HX711App:
         offset = hx.read_average(samples)
         hx.set_offset(offset)
         self.offset_var.set(str(offset))
+        calibration_temp = self._read_cpu_temp()
 
         messagebox.showinfo(
             self._t("cal_title"),
@@ -349,6 +381,19 @@ class HX711App:
         hx.set_scale(scale)
         self.scale_var.set(f"{scale:.6f}")
         self.status_var.set(self._t("status_calibration_done"))
+
+        self._save_config(
+            {
+                "scale": scale,
+                "offset": offset,
+                "known_weight": known_weight,
+                "calibration_time": time.time(),
+                "calibration_weight": known_weight,
+                "calibration_temp": calibration_temp,
+                "last_zero_raw": offset,
+            }
+        )
+        self._eval_calibration_status()
 
         if was_reading:
             self.start_reading()
@@ -375,6 +420,7 @@ class HX711App:
             self.status_var.set(self._t("status_reading"))
         else:
             self.status_var.set(self._t("status_idle"))
+        self._eval_calibration_status()
 
     def _t(self, key: str) -> str:
         lang = self.lang_var.get()
@@ -386,4 +432,53 @@ class HX711App:
             first_lang = next(iter(self.lang_data.values()))
             return first_lang.get(key, key)
         return key
+
+    def _save_config(self, updates: dict):
+        self.config.update(updates)
+        save_config(self.config)
+
+    def _read_cpu_temp(self) -> Optional[float]:
+        try:
+            path = "/sys/class/thermal/thermal_zone0/temp"
+            with open(path, "r", encoding="utf-8") as fh:
+                raw = fh.read().strip()
+            return int(raw) / 1000.0
+        except Exception:
+            return None
+
+    def _eval_calibration_status(self, initial: bool = False):
+        """
+        Lightweight validity check based on stored metadata.
+        Warns if calibration is stale; does not block usage.
+        """
+        cfg = self.config
+        cal_time = cfg.get("calibration_time")
+        scale = cfg.get("scale")
+        offset = cfg.get("offset")
+        if cal_time is None or scale is None or offset is None:
+            self.status_var.set(self._t("status_calibration_cancelled"))
+            self._set_cal_status("bad", self._t("cal_status_bad"))
+            return
+
+        age_days = (time.time() - cal_time) / 86400 if cal_time else None
+        warn_reasons = []
+        if age_days and age_days > 7:
+            warn_reasons.append(self._t("cal_warn_age"))
+
+        if warn_reasons:
+            msg = "; ".join(warn_reasons)
+            self._set_cal_status("warn", msg)
+            if not initial:
+                self.status_var.set(msg)
+        else:
+            self._set_cal_status("good", self._t("cal_status_valid"))
+
+    def _set_cal_status(self, level: str, text: str):
+        self.cal_status_var.set(text)
+        color = "#4caf50"  # green
+        if level == "warn":
+            color = "#fbbc04"  # amber
+        elif level == "bad":
+            color = "#ea4335"  # red
+        self.cal_status_color.set(color)
 

@@ -3,6 +3,7 @@
 Modern UI i helskärmsläge med bakgrundsläsning, JSON-baserad i18n och återanvändbar HX711‑modul.
 
 ## Snabbstart (Pi)
+
 1) Installera beroenden  
    `sudo apt install python3-gpiozero python3-tk`
 2) Koppla HX711  
@@ -14,6 +15,7 @@ Modern UI i helskärmsläge med bakgrundsläsning, JSON-baserad i18n och återan
 4) (Valfritt) Kiosk: avkommentera `root.attributes("-fullscreen", True)` i `lib/app_ui.py`.
 
 ## UI-översikt
+
 - Display: stort gramvärde, råvärde, statustid.
 - Knappfält (huvud): Start / Stop / Nollställ / Inställningar.
 - Inställningar:
@@ -24,6 +26,7 @@ Modern UI i helskärmsläge med bakgrundsläsning, JSON-baserad i18n och återan
   - Apply & Start, Stop, Nollställ, Kalibrera med vikt, Slå på/av, Avsluta, Tillbaka
 
 ## Kalibrering (enkel)
+
 1) I Inställningar: sätt pinnar/gain vid behov. Ange känd vikt i gram (t.ex. 1000 för 1 kg).
 2) Tryck **Kalibrera med vikt**.  
    - Tare körs först (töm vågen).  
@@ -32,12 +35,15 @@ Modern UI i helskärmsläge med bakgrundsläsning, JSON-baserad i18n och återan
 3) Tryck **Apply & Start** (eller Start) för livevärden.
 
 ## Nollställ (Tare)
+
 - Tryck **Nollställ** (huvud eller inställningar). Körs asynkront; uppdaterar Offset och status.
 
 ## Språk / i18n
+
 - JSON-filer i `languages/*.json` (levereras med `en.json`, `sv.json`). Lägg till fler filer med samma nycklar; de dyker upp automatiskt i språkvalet.
 
 ## Återanvänd HX711 utan GUI
+
 ```python
 from lib.hx711_device import HX711, HX711ReaderThread
 
@@ -52,14 +58,21 @@ reader = HX711ReaderThread(hx, samples=8, interval=0.2, callback=on_reading, err
 reader.start()
 ```
 
+## Konfiguration & lagring
+
+- Inställningar och kalibrering lagras i `config.json` (skapas automatiskt): pinnar, gain, skala, offset, samples, intervall, känd vikt, kalibreringstid/-temp/-vikt, senaste nollvärde.
+- Sparas när du kalibrerar, nollställer eller väljer Apply & Start.
+- Lägg till fler språk genom att lägga till `languages/<code>.json`.
+
 ## Kortkommandon
+
 - Ctrl+Q: avsluta
 - Esc: växla helskärm (om aktiverad)
 - Avsluta-knapp i Inställningar (för kiosk)
 
 ## Struktur
-- `main.py` — start
-— `lib/hx711_device.py` — hårdvaru- och trådlogik
-— `lib/app_ui.py` — Tk UI
-— `languages/` — JSON-översättningar (`en.json`, `sv.json`, fler kan läggas till)
 
+- `main.py` — start
+- `lib/hx711_device.py` — hårdvaru- och trådlogik
+- `lib/app_ui.py` — Tk UI
+- `languages/` — JSON-översättningar (`en.json`, `sv.json`, fler kan läggas till)
