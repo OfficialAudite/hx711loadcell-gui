@@ -35,6 +35,7 @@ class HX711:
 
         self.PD_SCK = gpiozero.OutputDevice(pd_sck)
         self.DOUT = gpiozero.DigitalInputDevice(dout, pull_up=False)
+        self._closed = False
 
         self.power_up()
         self.set_gain(gain)
@@ -106,6 +107,23 @@ class HX711:
 
     def power_up(self):
         self.PD_SCK.off()
+
+    def close(self):
+        """Release GPIO resources."""
+        if self._closed:
+            return
+        self._closed = True
+        for dev in (self.DOUT, self.PD_SCK):
+            try:
+                dev.close()
+            except Exception:
+                pass
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
 
 
 @dataclass
