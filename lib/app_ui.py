@@ -72,34 +72,34 @@ class HX711App:
 
         self.root.configure(bg=bg)
         style.configure("TFrame", background=bg)
-        style.configure("TLabel", background=bg, foreground=fg, font=("Segoe UI", 12))
+        style.configure("TLabel", background=bg, foreground=fg, font=("Segoe UI", 14))
         style.configure(
             "Display.TLabel",
             background=bg,
             foreground=fg,
-            font=("Segoe UI", 72, "bold"),
+            font=("Segoe UI", 88, "bold"),
         )
         style.configure(
             "Sub.TLabel",
             background=bg,
             foreground="#c9cdd1",
-            font=("Segoe UI", 18),
+            font=("Segoe UI", 22),
         )
         style.configure(
             "Status.TLabel",
             background=bg,
             foreground=muted,
-            font=("Segoe UI", 11),
+            font=("Segoe UI", 14),
         )
         style.configure(
             "TButton",
-            font=("Segoe UI", 11),
-            padding=8,
+            font=("Segoe UI", 13),
+            padding=10,
         )
         style.configure(
             "Accent.TButton",
-            font=("Segoe UI", 11, "bold"),
-            padding=10,
+            font=("Segoe UI", 13, "bold"),
+            padding=12,
             foreground=fg,
             background=accent,
         )
@@ -107,6 +107,11 @@ class HX711App:
             "Accent.TButton",
             background=[("active", "#6a9dff")],
             foreground=[("disabled", "#555")],
+        )
+        style.configure(
+            "TEntry",
+            font=("Segoe UI", 16),
+            padding=8,
         )
 
     def _build_frames(self):
