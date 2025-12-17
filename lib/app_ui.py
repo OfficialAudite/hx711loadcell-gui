@@ -21,7 +21,7 @@ class HX711App:
         default_lang = "en" if "en" in self.lang_data else next(iter(self.lang_data))
         self.lang_var = tk.StringVar(value=default_lang)
         root.title(self._t("title"))
-        # root.attributes("-fullscreen", True)  # enable for kiosk
+        root.attributes("-fullscreen", True)  # enable for kiosk
 
         self._configure_style()
 
