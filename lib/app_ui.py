@@ -33,6 +33,8 @@ class HX711App:
 
         self.hx: Optional[HX711] = None
         self.reader: Optional[HX711ReaderThread] = None
+        self.cal_banner = None
+        self.cal_banner_label = None
 
         self.status_var = tk.StringVar(value=self._t("status_idle"))
         self.raw_var = tk.StringVar(value="—")
@@ -127,6 +129,21 @@ class HX711App:
     def _build_display(self):
         self.display_frame = ttk.Frame(self.root, padding=20)
 
+        # Calibration banner at top
+        self.cal_status_var = tk.StringVar(value=self._t("cal_status_valid"))
+        self.cal_status_color = tk.StringVar(value="#4caf50")  # green
+        self.cal_banner = tk.Frame(self.display_frame, bg=self.cal_status_color.get(), height=44)
+        self.cal_banner.pack(fill="x", pady=(0, 8))
+        self.cal_banner_label = tk.Label(
+            self.cal_banner,
+            textvariable=self.cal_status_var,
+            bg=self.cal_status_color.get(),
+            fg="#ffffff",
+            font=("Segoe UI", 16, "bold"),
+            anchor="center",
+        )
+        self.cal_banner_label.pack(fill="both", expand=True, padx=6, pady=6)
+
         ttk.Label(
             self.display_frame,
             textvariable=self.grams_var,
@@ -146,19 +163,6 @@ class HX711App:
             textvariable=self.status_var,
             style="Status.TLabel",
         ).pack(pady=4)
-
-        self.cal_status_var = tk.StringVar(value=self._t("cal_status_valid"))
-        self.cal_status_color = tk.StringVar(value="#4caf50")  # green
-        cal_label = ttk.Label(
-            self.display_frame,
-            textvariable=self.cal_status_var,
-            style="Status.TLabel",
-            anchor="center",
-            justify="center",
-        )
-        cal_label.pack(pady=(0, 8))
-        # apply color via custom label config (ttk styles don't map dynamic fg easily)
-        cal_label.configure(foreground=self.cal_status_color.get())
 
         btn_row = ttk.Frame(self.display_frame)
         btn_row.pack(pady=10)
@@ -301,6 +305,21 @@ class HX711App:
         hx.set_offset(offset)
         self.hx = hx
 
+        # Quick zero-drift check against stored calibration zero.
+        last_zero_raw = self.config.get("last_zero_raw")
+        if last_zero_raw is not None:
+            try:
+                zero_samples = max(3, samples)
+                current_zero = hx.read_average(zero_samples)
+                drift_grams = abs((current_zero - hx.get_offset()) / max(hx.get_scale(), 1e-9))
+                drift_limit = 5.0  # grams tolerance for drift warning
+                if drift_grams > drift_limit:
+                    self._set_cal_status("warn", self._t("cal_warn_zero"))
+                    self.status_var.set(self._t("cal_warn_zero"))
+            except Exception:
+                # Non-blocking: ignore drift check failures
+                pass
+
         self._save_config(
             {
                 "dout": dout,
@@ -359,7 +378,9 @@ class HX711App:
                 self.hx.tare(times=max(3, int(self.samples_var.get())))
                 self.offset_var.set(str(self.hx.get_offset()))
                 self.status_var.set(self._t("status_tared"))
-                self._save_config({"offset": self.hx.get_offset()})
+                self._save_config(
+                    {"offset": self.hx.get_offset(), "last_zero_raw": self.hx.get_offset()}
+                )
             except Exception as exc:
                 self.status_var.set(self._t("status_error").format(err=exc))
 
@@ -511,8 +532,8 @@ class HX711App:
             ("2", lambda: append_char("2")),
             ("3", lambda: append_char("3")),
             ("C", clear),
-            ("0", lambda: append_char("0")),
             (".", lambda: append_char(".")),
+            ("0", lambda: append_char("0")),
             ("Cancel", cancel),
             ("OK", accept),
         ]
@@ -630,4 +651,14 @@ class HX711App:
         elif level == "bad":
             color = "#ea4335"  # red
         self.cal_status_color.set(color)
+        self._apply_cal_status_style()
+
+    def _apply_cal_status_style(self):
+        """Update banner colors to match current status."""
+        if not self.cal_banner or not self.cal_banner_label:
+            return
+        color = self.cal_status_color.get()
+        fg = "#0f1115" if color == "#fbbc04" else "#ffffff"
+        self.cal_banner.configure(bg=color)
+        self.cal_banner_label.configure(bg=color, fg=fg)
 
