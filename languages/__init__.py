@@ -15,6 +15,13 @@ DEFAULT_EN = {
     "status_calibrating_clear": "Calibrating: remove all weight, taring…",
     "status_calibration_done": "Calibration done",
     "status_calibration_cancelled": "Calibration cancelled",
+    "cal_status_valid": "Calibration OK",
+    "cal_status_warn": "Calibration warn",
+    "cal_status_bad": "Calibration required",
+    "cal_warn_age": "Calibration may be stale",
+    "cal_warn_zero": "Zero drift detected",
+    "cal_warn_temp": "Temperature change detected",
+    "cal_warn_overload": "Overload detected",
     "status_power_down": "Powered down",
     "status_power_up": "Powered up",
     "status_error": "Error: {err}",
@@ -39,14 +46,16 @@ DEFAULT_EN = {
     "label_samples": "Samples",
     "label_interval": "Interval (s)",
     "label_known_weight": "Known weight (g)",
+    "label_decimals": "Decimals",
     "label_language": "Language / Språk",
     "invalid_input": "Check numeric fields.",
     "invalid_weight": "Known weight must be greater than zero.",
+    "invalid_scale": "Calibration failed: measured weight too small.",
     "cal_prompt_place_weight": "Place the known weight on the scale, then tap OK.",
     "cal_title": "Calibration",
     "info_start_first": "Start the reader first.",
     "hx_error": "HX711 error",
-    "hx_init_failed": "HX711 init failed",
+    "hx_init_failed": "HX711 init failed"
 }
 
 

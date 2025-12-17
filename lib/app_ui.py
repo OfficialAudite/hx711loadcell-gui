@@ -4,6 +4,7 @@ Uses lib.hx711_device for hardware access and languages for i18n.
 """
 
 import time
+import math
 import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Optional
@@ -39,6 +40,7 @@ class HX711App:
         self.status_var = tk.StringVar(value=self._t("status_idle"))
         self.raw_var = tk.StringVar(value="—")
         self.grams_var = tk.StringVar(value="—")
+        self.decimals_var = tk.StringVar(value=str(self.config.get("decimals", 2)))
 
         self.dout_var = tk.StringVar(value=str(self.config.get("dout", 5)))
         self.sck_var = tk.StringVar(value=str(self.config.get("sck", 6)))
@@ -74,34 +76,34 @@ class HX711App:
 
         self.root.configure(bg=bg)
         style.configure("TFrame", background=bg)
-        style.configure("TLabel", background=bg, foreground=fg, font=("Segoe UI", 14))
+        style.configure("TLabel", background=bg, foreground=fg, font=("Segoe UI", 16))
         style.configure(
             "Display.TLabel",
             background=bg,
             foreground=fg,
-            font=("Segoe UI", 88, "bold"),
+            font=("Segoe UI", 96, "bold"),
         )
         style.configure(
             "Sub.TLabel",
             background=bg,
             foreground="#c9cdd1",
-            font=("Segoe UI", 22),
+            font=("Segoe UI", 24),
         )
         style.configure(
             "Status.TLabel",
             background=bg,
             foreground=muted,
-            font=("Segoe UI", 14),
+            font=("Segoe UI", 16),
         )
         style.configure(
             "TButton",
-            font=("Segoe UI", 13),
-            padding=10,
+            font=("Segoe UI", 15),
+            padding=12,
         )
         style.configure(
             "Accent.TButton",
-            font=("Segoe UI", 13, "bold"),
-            padding=12,
+            font=("Segoe UI", 15, "bold"),
+            padding=14,
             foreground=fg,
             background=accent,
         )
@@ -112,8 +114,13 @@ class HX711App:
         )
         style.configure(
             "TEntry",
-            font=("Segoe UI", 16),
-            padding=8,
+            font=("Segoe UI", 18),
+            padding=10,
+        )
+        style.configure(
+            "Numpad.TButton",
+            font=("Segoe UI", 18, "bold"),
+            padding=12,
         )
 
     def _build_frames(self):
@@ -195,6 +202,7 @@ class HX711App:
             (self._t("label_samples"), self.samples_var, False, False),
             (self._t("label_interval"), self.interval_var, True, False),
             (self._t("label_known_weight"), self.known_weight_var, True, False),
+            (self._t("label_decimals"), self.decimals_var, False, False),
         ]
 
         for idx, (label, var, allow_float, allow_negative) in enumerate(inputs, start=1):
@@ -292,6 +300,7 @@ class HX711App:
             samples = max(1, int(self.samples_var.get()))
             interval = max(0.05, float(self.interval_var.get()))
             known_weight = float(self.known_weight_var.get())
+            decimals = max(0, int(self.decimals_var.get()))
         except ValueError:
             messagebox.showerror(self._t("hx_error"), self._t("invalid_input"))
             return
@@ -330,6 +339,7 @@ class HX711App:
                 "samples": samples,
                 "interval": interval,
                 "known_weight": known_weight,
+                "decimals": decimals,
             }
         )
 
@@ -360,7 +370,15 @@ class HX711App:
     def _update_ui(self, reading: Reading):
         self.raw_var.set(f"{reading.raw}")
         grams = abs(reading.grams)  # display-only absolute; one-directional load cell
-        self.grams_var.set(f"{grams:0.2f} g")
+        try:
+            decimals = max(0, int(self.decimals_var.get()))
+        except Exception:
+            decimals = 2
+        if decimals == 0:
+            self.grams_var.set(f"{round(grams):.0f} g")
+        else:
+            fmt = f"{{grams:0.{decimals}f}} g"
+            self.grams_var.set(fmt.format(grams=grams))
         self.status_var.set(time.strftime("%H:%M:%S", time.localtime(reading.timestamp)))
 
     def _on_error(self, exc: Exception):
@@ -432,8 +450,33 @@ class HX711App:
             self._t("cal_prompt_place_weight"),
         )
         measured = hx.read_average(samples) - hx.get_offset()
+        measured = abs(measured)
+        if measured <= 0 or not math.isfinite(measured):
+            messagebox.showerror(self._t("hx_error"), self._t("invalid_scale"))
+            if was_reading:
+                self.start_reading()
+            return
+
+        proceed = self._prompt_continue(self._t("cal_title"), self._t("cal_prompt_place_weight"))
+        if not proceed:
+            if was_reading:
+                self.start_reading()
+            return
+
+        measured = hx.read_average(samples) - hx.get_offset()
+        measured = abs(measured)
+        if measured <= 0 or not math.isfinite(measured):
+            messagebox.showerror(self._t("hx_error"), self._t("invalid_scale"))
+            if was_reading:
+                self.start_reading()
+            return
 
         scale = measured / known_weight if known_weight else 1.0
+        if scale <= 0 or not math.isfinite(scale):
+            messagebox.showerror(self._t("hx_error"), self._t("invalid_scale"))
+            if was_reading:
+                self.start_reading()
+            return
         hx.set_scale(scale)
         self.scale_var.set(f"{scale:.6f}")
         self.status_var.set(self._t("status_calibration_done"))
@@ -512,10 +555,10 @@ class HX711App:
         def cancel():
             top.destroy()
 
-        ttk.Label(top, text=title, font=("Segoe UI", 14, "bold")).grid(
+        ttk.Label(top, text=title, font=("Segoe UI", 16, "bold")).grid(
             row=0, column=0, columnspan=4, pady=(8, 4), padx=10, sticky="we"
         )
-        entry = ttk.Entry(top, textvariable=val, font=("Segoe UI", 16), justify="right")
+        entry = ttk.Entry(top, textvariable=val, font=("Segoe UI", 18), justify="right")
         entry.grid(row=1, column=0, columnspan=4, pady=4, padx=10, sticky="we")
         entry.focus_set()
 
@@ -534,14 +577,14 @@ class HX711App:
             ("C", clear),
             (".", lambda: append_char(".")),
             ("0", lambda: append_char("0")),
-            ("Cancel", cancel),
+            (self._t("btn_cancel"), cancel),
             ("OK", accept),
         ]
 
         row = 2
         col = 0
         for text, cmd in buttons:
-            ttk.Button(top, text=text, command=cmd, width=8).grid(
+            ttk.Button(top, text=text, command=cmd, width=8, style="Numpad.TButton").grid(
                 row=row, column=col, padx=4, pady=4, sticky="nsew"
             )
             col += 1
@@ -582,6 +625,41 @@ class HX711App:
             ).pack(fill="x", pady=4)
 
         ttk.Button(top, text=self._t("btn_cancel"), command=top.destroy).pack(pady=(0, 10))
+
+    def _prompt_continue(self, title: str, message: str) -> bool:
+        """Large-format modal prompt used for calibration steps."""
+        top = tk.Toplevel(self.root)
+        top.title(title)
+        top.transient(self.root)
+        top.grab_set()
+        top.geometry("520x280")
+
+        ttk.Label(top, text=title, font=("Segoe UI", 18, "bold")).pack(
+            padx=16, pady=(18, 10)
+        )
+        msg = ttk.Label(top, text=message, font=("Segoe UI", 16), wraplength=460, justify="center")
+        msg.pack(padx=16, pady=(0, 18))
+
+        result = {"ok": False}
+
+        def on_ok():
+            result["ok"] = True
+            top.destroy()
+
+        def on_cancel():
+            top.destroy()
+
+        btn_frame = ttk.Frame(top)
+        btn_frame.pack(pady=8)
+        ttk.Button(btn_frame, text=self._t("btn_cancel"), command=on_cancel, width=14).pack(
+            side="left", padx=8
+        )
+        ttk.Button(
+            btn_frame, text=self._t("btn_apply_start"), style="Accent.TButton", command=on_ok, width=16
+        ).pack(side="left", padx=8)
+
+        self.root.wait_window(top)
+        return result["ok"]
 
     def _on_language_change(self):
         self._save_config({"language": self.lang_var.get()})
