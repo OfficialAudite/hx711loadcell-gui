@@ -312,7 +312,7 @@ class HX711App:
 
     def _update_ui(self, reading: Reading):
         self.raw_var.set(f"{reading.raw}")
-        self.grams_var.set(f"{reading.grams:0.2f}")
+        self.grams_var.set(f"{reading.grams:0.2f} g")
         self.status_var.set(time.strftime("%H:%M:%S", time.localtime(reading.timestamp)))
 
     def _on_error(self, exc: Exception):
