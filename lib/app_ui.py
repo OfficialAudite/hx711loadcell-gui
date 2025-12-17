@@ -178,36 +178,53 @@ class HX711App:
         ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
 
         inputs = [
-            (self._t("label_dout"), self.dout_var),
-            (self._t("label_sck"), self.sck_var),
-            (self._t("label_gain"), self.gain_var),
-            (self._t("label_scale"), self.scale_var),
-            (self._t("label_offset"), self.offset_var),
-            (self._t("label_samples"), self.samples_var),
-            (self._t("label_interval"), self.interval_var),
-            (self._t("label_known_weight"), self.known_weight_var),
+            (self._t("label_dout"), self.dout_var, False, False),
+            (self._t("label_sck"), self.sck_var, False, False),
+            (self._t("label_gain"), self.gain_var, False, False),
+            (self._t("label_scale"), self.scale_var, True, True),
+            (self._t("label_offset"), self.offset_var, True, True),
+            (self._t("label_samples"), self.samples_var, False, False),
+            (self._t("label_interval"), self.interval_var, True, False),
+            (self._t("label_known_weight"), self.known_weight_var, True, False),
         ]
 
-        for idx, (label, var) in enumerate(inputs, start=1):
+        for idx, (label, var, allow_float, allow_negative) in enumerate(inputs, start=1):
             ttk.Label(self.settings_frame, text=label).grid(
                 row=idx, column=0, sticky="w", pady=4
             )
-            ttk.Entry(self.settings_frame, textvariable=var, width=16).grid(
-                row=idx, column=1, sticky="w", pady=4
+            entry = ttk.Entry(
+                self.settings_frame,
+                textvariable=var,
+                width=16,
+                state="readonly",
             )
+            entry.grid(row=idx, column=1, sticky="w", pady=4)
+            entry.bind(
+                "<Button-1>",
+                lambda _e, v=var, t=label, f=allow_float, n=allow_negative: self._open_numpad(v, t, f, n),
+            )
+            ttk.Button(
+                self.settings_frame,
+                text="⌨",
+                width=3,
+                command=lambda v=var, t=label, f=allow_float, n=allow_negative: self._open_numpad(v, t, f, n),
+            ).grid(row=idx, column=2, sticky="w", pady=4, padx=2)
 
         ttk.Label(self.settings_frame, text=self._t("label_language")).grid(
             row=len(inputs) + 1, column=0, sticky="w", pady=4
         )
-        lang_combo = ttk.Combobox(
+        ttk.Button(
+            self.settings_frame,
+            text=self._t("btn_change_language"),
+            command=self._open_language_picker,
+            width=20,
+        ).grid(row=len(inputs) + 1, column=1, sticky="w", pady=4)
+        ttk.Label(
             self.settings_frame,
             textvariable=self.lang_var,
-            values=sorted(self.lang_data.keys()),
-            state="readonly",
-            width=14,
-        )
-        lang_combo.grid(row=len(inputs) + 1, column=1, sticky="w", pady=4)
-        lang_combo.bind("<<ComboboxSelected>>", lambda _: self._on_language_change())
+            width=8,
+            anchor="w",
+        ).grid(row=len(inputs) + 1, column=2, sticky="w", pady=4)
 
         btn_frame = ttk.Frame(self.settings_frame)
         btn_frame.grid(row=len(inputs) + 2, column=0, columnspan=2, pady=(12, 6))
@@ -318,7 +335,8 @@ class HX711App:
 
     def _update_ui(self, reading: Reading):
         self.raw_var.set(f"{reading.raw}")
-        self.grams_var.set(f"{reading.grams:0.2f} g")
+        grams = abs(reading.grams)  # display-only absolute; one-directional load cell
+        self.grams_var.set(f"{grams:0.2f} g")
         self.status_var.set(time.strftime("%H:%M:%S", time.localtime(reading.timestamp)))
 
     def _on_error(self, exc: Exception):
@@ -425,6 +443,119 @@ class HX711App:
     def _quit(self):
         self.stop_reading()
         self.root.destroy()
+
+    def _open_numpad(self, target_var: tk.StringVar, title: str, allow_float: bool, allow_negative: bool):
+        """
+        Touch-friendly numeric pad dialog that updates target_var.
+        allow_float controls '.'; allow_negative toggles sign.
+        """
+        top = tk.Toplevel(self.root)
+        top.title(title)
+        top.transient(self.root)
+        top.grab_set()
+
+        val = tk.StringVar(value=target_var.get())
+
+        def append_char(ch: str):
+            current = val.get()
+            if ch == "." and not allow_float:
+                return
+            if ch == "." and "." in current:
+                return
+            val.set(current + ch)
+
+        def toggle_sign():
+            if not allow_negative:
+                return
+            current = val.get()
+            if current.startswith("-"):
+                val.set(current[1:])
+            else:
+                val.set("-" + current)
+
+        def backspace():
+            val.set(val.get()[:-1])
+
+        def clear():
+            val.set("")
+
+        def accept():
+            target_var.set(val.get() or "0")
+            top.destroy()
+
+        def cancel():
+            top.destroy()
+
+        ttk.Label(top, text=title, font=("Segoe UI", 14, "bold")).grid(
+            row=0, column=0, columnspan=4, pady=(8, 4), padx=10, sticky="we"
+        )
+        entry = ttk.Entry(top, textvariable=val, font=("Segoe UI", 16), justify="right")
+        entry.grid(row=1, column=0, columnspan=4, pady=4, padx=10, sticky="we")
+        entry.focus_set()
+
+        buttons = [
+            ("7", lambda: append_char("7")),
+            ("8", lambda: append_char("8")),
+            ("9", lambda: append_char("9")),
+            ("⌫", backspace),
+            ("4", lambda: append_char("4")),
+            ("5", lambda: append_char("5")),
+            ("6", lambda: append_char("6")),
+            ("±", toggle_sign),
+            ("1", lambda: append_char("1")),
+            ("2", lambda: append_char("2")),
+            ("3", lambda: append_char("3")),
+            ("C", clear),
+            ("0", lambda: append_char("0")),
+            (".", lambda: append_char(".")),
+            ("Cancel", cancel),
+            ("OK", accept),
+        ]
+
+        row = 2
+        col = 0
+        for text, cmd in buttons:
+            ttk.Button(top, text=text, command=cmd, width=8).grid(
+                row=row, column=col, padx=4, pady=4, sticky="nsew"
+            )
+            col += 1
+            if col > 3:
+                col = 0
+                row += 1
+
+        for i in range(4):
+            top.grid_columnconfigure(i, weight=1)
+
+        self.root.wait_window(top)
+
+    def _open_language_picker(self):
+        """Touch-friendly language chooser with large buttons."""
+        top = tk.Toplevel(self.root)
+        top.title(self._t("label_language"))
+        top.transient(self.root)
+        top.grab_set()
+
+        ttk.Label(top, text=self._t("label_language"), font=("Segoe UI", 14, "bold")).pack(
+            padx=12, pady=(10, 6)
+        )
+
+        btn_frame = ttk.Frame(top)
+        btn_frame.pack(padx=12, pady=(0, 10), fill="both", expand=True)
+
+        def choose(lang: str):
+            self.lang_var.set(lang)
+            top.destroy()
+            self._on_language_change()
+
+        for lang in sorted(self.lang_data.keys()):
+            ttk.Button(
+                btn_frame,
+                text=lang,
+                command=lambda l=lang: choose(l),
+                width=24,
+            ).pack(fill="x", pady=4)
+
+        ttk.Button(top, text=self._t("btn_cancel"), command=top.destroy).pack(pady=(0, 10))
 
     def _on_language_change(self):
         self._save_config({"language": self.lang_var.get()})

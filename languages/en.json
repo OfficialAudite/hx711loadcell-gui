@@ -28,6 +28,8 @@
   "btn_power_up": "Power Up",
   "btn_quit": "Quit",
   "btn_back": "Back",
+  "btn_cancel": "Cancel",
+  "btn_change_language": "Change language",
   "label_settings": "Settings",
   "label_dout": "DOUT pin",
   "label_sck": "SCK pin",

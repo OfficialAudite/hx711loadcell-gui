@@ -28,6 +28,8 @@
   "btn_power_up": "Slå på",
   "btn_quit": "Avsluta",
   "btn_back": "Tillbaka",
+  "btn_cancel": "Avbryt",
+  "btn_change_language": "Byt språk",
   "label_settings": "Inställningar",
   "label_dout": "DOUT‑pinne",
   "label_sck": "SCK‑pinne",
