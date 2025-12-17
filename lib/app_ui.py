@@ -190,8 +190,12 @@ class HX711App:
         self.settings_frame = ttk.Frame(self.root, padding=16)
 
         ttk.Label(
-            self.settings_frame, text=self._t("label_settings"), font=("Segoe UI", 18, "bold")
-        ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
+            self.settings_frame, text=self._t("label_settings"), font=("Segoe UI", 20, "bold")
+        ).grid(row=0, column=0, columnspan=6, sticky="w", pady=(0, 10))
+
+        form_frame = self.settings_frame
+        for col in range(6):
+            form_frame.grid_columnconfigure(col, weight=1, uniform="settings")
 
         inputs = [
             (self._t("label_dout"), self.dout_var, False, False),
@@ -205,71 +209,77 @@ class HX711App:
             (self._t("label_decimals"), self.decimals_var, False, False),
         ]
 
-        for idx, (label, var, allow_float, allow_negative) in enumerate(inputs, start=1):
-            ttk.Label(self.settings_frame, text=label).grid(
-                row=idx, column=0, sticky="w", pady=4
+        for idx, (label, var, allow_float, allow_negative) in enumerate(inputs):
+            row = 1 + (idx // 2)
+            col_base = 0 if idx % 2 == 0 else 3
+            ttk.Label(form_frame, text=label).grid(
+                row=row, column=col_base, sticky="w", pady=6, padx=(0, 4)
             )
             entry = ttk.Entry(
-                self.settings_frame,
+                form_frame,
                 textvariable=var,
-                width=16,
+                width=9,
                 state="readonly",
+                justify="left",
             )
-            entry.grid(row=idx, column=1, sticky="w", pady=4)
+            entry.grid(row=row, column=col_base + 1, sticky="w", pady=6, padx=(0, 4))
             entry.bind(
                 "<Button-1>",
                 lambda _e, v=var, t=label, f=allow_float, n=allow_negative: self._open_numpad(v, t, f, n),
             )
             ttk.Button(
-                self.settings_frame,
+                form_frame,
                 text="⌨",
-                width=3,
+                width=4,
                 command=lambda v=var, t=label, f=allow_float, n=allow_negative: self._open_numpad(v, t, f, n),
-            ).grid(row=idx, column=2, sticky="w", pady=4, padx=2)
+            ).grid(row=row, column=col_base + 2, sticky="w", pady=6, padx=(0, 10))
 
+        rows_used = 1 + (len(inputs) + 1) // 2
         ttk.Label(self.settings_frame, text=self._t("label_language")).grid(
-            row=len(inputs) + 1, column=0, sticky="w", pady=4
+            row=rows_used, column=0, sticky="w", pady=8
         )
         ttk.Button(
             self.settings_frame,
             text=self._t("btn_change_language"),
             command=self._open_language_picker,
-            width=20,
-        ).grid(row=len(inputs) + 1, column=1, sticky="w", pady=4)
+            width=18,
+        ).grid(row=rows_used, column=1, sticky="w", pady=8, padx=(0, 4))
         ttk.Label(
             self.settings_frame,
             textvariable=self.lang_var,
-            width=8,
+            width=10,
             anchor="w",
-        ).grid(row=len(inputs) + 1, column=2, sticky="w", pady=4)
+        ).grid(row=rows_used, column=2, sticky="w", pady=8)
 
         btn_frame = ttk.Frame(self.settings_frame)
-        btn_frame.grid(row=len(inputs) + 2, column=0, columnspan=2, pady=(12, 6))
+        btn_frame.grid(row=rows_used + 1, column=0, columnspan=6, pady=(16, 10))
+        for col in range(4):
+            btn_frame.grid_columnconfigure(col, weight=1, uniform="actions")
 
-        ttk.Button(btn_frame, text=self._t("btn_apply_start"), command=self.start_reading).grid(
-            row=0, column=0, padx=4, pady=2
+        ttk.Button(btn_frame, text=self._t("btn_apply_start"), command=self.start_reading, width=16).grid(
+            row=0, column=0, padx=6, pady=4
         )
-        ttk.Button(btn_frame, text=self._t("btn_stop"), command=self.stop_reading).grid(
-            row=0, column=1, padx=4, pady=2
+        ttk.Button(btn_frame, text=self._t("btn_stop"), command=self.stop_reading, width=16).grid(
+            row=0, column=1, padx=6, pady=4
         )
-        ttk.Button(btn_frame, text=self._t("btn_tare"), command=self._tare_async).grid(
-            row=0, column=2, padx=4, pady=2
+        ttk.Button(btn_frame, text=self._t("btn_tare"), command=self._tare_async, width=16).grid(
+            row=0, column=2, padx=6, pady=4
         )
-        ttk.Button(btn_frame, text=self._t("btn_calibrate"), command=self._calibrate_flow).grid(
-            row=0, column=3, padx=4, pady=2
+        ttk.Button(btn_frame, text=self._t("btn_calibrate"), command=self._calibrate_flow, width=16).grid(
+            row=0, column=3, padx=6, pady=4
         )
 
-        ttk.Button(btn_frame, text=self._t("btn_power_down"), command=self.power_down).grid(
-            row=1, column=0, padx=4, pady=4
+        ttk.Button(btn_frame, text=self._t("btn_power_down"), command=self.power_down, width=16).grid(
+            row=1, column=0, padx=6, pady=6
         )
-        ttk.Button(btn_frame, text=self._t("btn_power_up"), command=self.power_up).grid(
-            row=1, column=1, padx=4, pady=4
+        ttk.Button(btn_frame, text=self._t("btn_power_up"), command=self.power_up, width=16).grid(
+            row=1, column=1, padx=6, pady=6
         )
-        ttk.Button(btn_frame, text=self._t("btn_quit"), command=self._quit).grid(
-            row=1, column=2, padx=4, pady=4
+        ttk.Button(btn_frame, text=self._t("btn_quit"), command=self._quit, width=16).grid(
+            row=1, column=2, padx=6, pady=6
         )
-        ttk.Button(btn_frame, text=self._t("btn_back"), command=self.show_display).grid(
-            row=1, column=3, padx=4, pady=4
+        ttk.Button(btn_frame, text=self._t("btn_back"), command=self.show_display, width=16).grid(
+            row=1, column=3, padx=6, pady=6
         )
 
         ttk.Label(
