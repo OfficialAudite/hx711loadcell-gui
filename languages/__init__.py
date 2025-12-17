@@ -25,6 +25,7 @@ DEFAULT_EN = {
     "status_power_down": "Powered down",
     "status_power_up": "Powered up",
     "status_error": "Error: {err}",
+    "newtons": "Newtons",
     "btn_start": "Start",
     "btn_stop": "Stop",
     "btn_tare": "Tare",

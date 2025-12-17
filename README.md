@@ -1,7 +1,7 @@
 # HX711 Load Cell UI (Tkinter, Raspberry Pi)
 
-Modern, fullscreen-capable HX711 scale UI with background readings, JSON-based
-i18n, and a reusable HX711 device module.
+Modern, fullscreen HX711 scale UI for Raspberry Pi with background readings,
+touch-friendly numpad, JSON-based i18n, and a reusable HX711 device module.
 
 ## Quick start (Pi)
 
@@ -13,32 +13,39 @@ i18n, and a reusable HX711 device module.
    - VCC -> 3V3/5V, GND -> GND
 3) Run  
    `python main.py`
-4) (Optional) Kiosk: uncomment `root.attributes("-fullscreen", True)` in `lib/app_ui.py`.
+4) Kiosk: fullscreen is on by default (set in `main.py` / `app_ui`).
+5) Optional desktop launcher on Pi: `bash scripts/install_desktop_entry.sh`
 
-## UI overview
+## UI overview (touch-friendly)
 
-- Display: big grams value, raw count, status time.
-- Buttons (main): Start / Stop / Tare / Settings.
-- Settings:
-  - DOUT pin, SCK pin, Gain (32/64/128)
-  - Scale, Offset (persisted in session), Samples (avg count), Interval (s)
-  - Known weight (g) for calibration
-  - Language selector (auto-fills from `languages/*.json`)
-  - Apply & Start, Stop, Tare, Calibrate with weight, Power Up/Down, Quit, Back
+- Display: very large grams (signed), Newtons, raw count, status clock, and a colored
+  calibration banner (green=ok, amber=warn, red=needs calibration).
+- Main buttons: Start / Stop / Tare / Settings.
+- Settings (two-column layout, readonly fields with on-screen numpad):
+  - Pins: DOUT, SCK; Gain (32/64/128)
+  - Scale, Offset (persisted)
+  - Samples (average count), Interval (seconds)
+  - Known weight (grams) for calibration
+  - Decimals displayed (0+)
+  - Language picker (large buttons; auto-lists `languages/*.json`)
+  - Apply & Start, Stop, Tare, Calibrate, Power Up/Down, Quit, Back
 
-## Calibration (simple flow)
+## Calibration (safer flow)
 
-1) In Settings, set pins/gain if needed. Enter your known weight in grams
+1) In Settings, set pins/gain if needed. Enter a known weight in grams
    (e.g., 1000 for 1 kg).
-2) Tap **Calibrate with weight**.  
-   - It first tares (clear the scale).  
-   - When prompted, place the known weight and confirm.  
-   - Scale is computed and stored; Offset updated.
+2) Tap **Calibrate**.  
+   - It tares (captures offset).  
+   - You’re prompted on a large dialog to place the known weight.  
+   - The measured delta is rechecked; if invalid/zero you get an error instead of saving.
+   - Scale and offset are stored on success.
 3) Tap **Apply & Start** (or Start on main) for live readings.
+4) On start, a quick zero-drift check warns (banner amber/red) if the stored zero has drifted.
 
 ## Tare
 
-- Tap **Tare** (main or settings). Runs async; updates Offset and status.
+- Tap **Tare** (main or settings). Runs async; applies a session-only tare offset that
+  does **not** change the calibrated offset. Calibrate or restart reading to clear tare.
 
 ## Language / i18n
 
@@ -63,17 +70,16 @@ reader.start()
 
 ## Config & persistence
 
-- Settings and calibration are stored in `config.json` (auto-created): pins, gain,
-  scale, offset, samples, interval, known weight, calibration time/temp/weight,
-  last zero raw.
-- Saving happens when you calibrate, tare, or apply & start.
+- `config.json` stores: pins, gain, scale, offset, samples, interval, known weight,
+  decimals, calibration time/temp/weight, last zero raw, language.
+- Saves on calibrate, tare, or Apply & Start.
 - Add more languages by dropping `languages/<code>.json`.
 
 ## Controls / shortcuts
 
 - Ctrl+Q: quit
-- Esc: toggle fullscreen (if enabled)
-- Quit button in Settings (useful in kiosk)
+- Esc: toggle fullscreen
+- Quit button in Settings (kiosk-friendly)
 
 ## Project layout
 

@@ -1,7 +1,7 @@
 # HX711 vågcells‑UI (Tkinter, Raspberry Pi)
 
-Modern UI i helskärmsläge med bakgrundsläsning, JSON-baserad i18n och
-återanvändbar HX711‑modul.
+Modern UI i helskärmsläge med bakgrundsläsning, touchvänligt numeriskt
+knappbord, JSON-baserad i18n och återanvändbar HX711‑modul.
 
 ## Snabbstart (Pi)
 
@@ -13,32 +13,41 @@ Modern UI i helskärmsläge med bakgrundsläsning, JSON-baserad i18n och
    - VCC -> 3V3/5V, GND -> GND
 3) Kör  
    `python main.py`
-4) (Valfritt) Kiosk: avkommentera `root.attributes("-fullscreen", True)` i `lib/app_ui.py`.
+4) Kiosk: helskärm är aktiverat som standard.
+5) (Valfritt) Skrivbordsstart på Pi: `bash scripts/install_desktop_entry.sh`
 
-## UI-översikt
+## UI-översikt (touch-vänlig)
 
-- Display: stort gramvärde, råvärde, statustid.
-- Knappfält (huvud): Start / Stop / Nollställ / Inställningar.
-- Inställningar:
-  - DOUT-pin, SCK-pin, Gain (32/64/128)
-  - Skala, Offset (under session), Medelvärdesprov (Samples), Intervall (s)
-  - Känd vikt (g) för kalibrering
-  - Språkval (fylls automatiskt från `languages/*.json`)
-  - Apply & Start, Stop, Nollställ, Kalibrera med vikt, Slå på/av, Avsluta, Tillbaka
+- Display: mycket stort gramvärde (med tecken), Newton, råvärde, statustid och en färgad
+  kalibreringsbanderoll (grön=OK, bärnsten=varning, röd=kräver kalibrering).
+- Huvudknappar: Start / Stop / Nollställ / Inställningar.
+- Inställningar (två kolumner, skrivskyddade fält med skärmtangentbord):
+  - Pinnar: DOUT, SCK; Gain (32/64/128)
+  - Skala, Offset (sparas)
+  - Samples (medelvärden), Intervall (sekunder)
+  - Känd vikt (gram) för kalibrering
+  - Decimaler som visas (0+)
+  - Språkval med stora knappar (`languages/*.json` autodetekteras)
+  - Apply & Start, Stop, Nollställ, Kalibrera, Slå på/av, Avsluta, Tillbaka
 
-## Kalibrering (enkel)
+## Kalibrering (säkrare)
 
 1) I Inställningar: sätt pinnar/gain vid behov. Ange känd vikt i gram
    (t.ex. 1000 för 1 kg).
-2) Tryck **Kalibrera med vikt**.  
-   - Tare körs först (töm vågen).  
-   - När du blir ombedd: lägg på vikten och bekräfta.  
-   - Skala beräknas och sparas; Offset uppdateras.
+2) Tryck **Kalibrera**.  
+   - Tare körs först (nollställning).  
+   - En stor dialog ber om att lägga på vikten och bekräfta.  
+   - Det uppmätta delta-värdet dubbelkollas; om det är ogiltigt/0 avbryts
+     och inget sparas.  
+   - Skala och offset sparas vid lyckad mätning.
 3) Tryck **Apply & Start** (eller Start) för livevärden.
+4) Vid start görs en snabb noll-driftkontroll; banderollen varnar om nollan drivit.
 
 ## Nollställ (Tare)
 
-- Tryck **Nollställ** (huvud eller inställningar). Körs asynkront; uppdaterar Offset och status.
+- Tryck **Nollställ** (huvud eller inställningar). Körs asynkront; lägger på en
+  sessionsbaserad tare utan att ändra kalibrerings-offset. Kalibrera eller starta om läsningen
+  för att rensa tare.
 
 ## Språk / i18n
 
@@ -63,16 +72,15 @@ reader.start()
 
 ## Konfiguration & lagring
 
-- Inställningar och kalibrering lagras i `config.json` (skapas automatiskt):
-  pinnar, gain, skala, offset, samples, intervall, känd vikt,
-  kalibreringstid/-temp/-vikt, senaste nollvärde.
-- Sparas när du kalibrerar, nollställer eller väljer Apply & Start.
+- `config.json` lagrar: pinnar, gain, skala, offset, samples, intervall,
+  känd vikt, decimaler, kalibreringstid/-temp/-vikt, senaste nollvärde, språk.
+- Sparas vid kalibrering, nollställning eller Apply & Start.
 - Lägg till fler språk genom att lägga till `languages/<code>.json`.
 
 ## Kortkommandon
 
 - Ctrl+Q: avsluta
-- Esc: växla helskärm (om aktiverad)
+- Esc: växla helskärm
 - Avsluta-knapp i Inställningar (för kiosk)
 
 ## Struktur

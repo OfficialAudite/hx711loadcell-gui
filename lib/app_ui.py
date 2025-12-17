@@ -40,7 +40,9 @@ class HX711App:
         self.status_var = tk.StringVar(value=self._t("status_idle"))
         self.raw_var = tk.StringVar(value="—")
         self.grams_var = tk.StringVar(value="—")
+        self.newtons_var = tk.StringVar(value="—")
         self.decimals_var = tk.StringVar(value=str(self.config.get("decimals", 2)))
+        self.tare_offset = 0.0
 
         self.dout_var = tk.StringVar(value=str(self.config.get("dout", 5)))
         self.sck_var = tk.StringVar(value=str(self.config.get("sck", 6)))
@@ -157,6 +159,13 @@ class HX711App:
             style="Display.TLabel",
             anchor="center",
         ).pack(fill="both", expand=True, pady=10)
+
+        ttk.Label(
+            self.display_frame,
+            textvariable=self.newtons_var,
+            style="Sub.TLabel",
+            anchor="center",
+        ).pack(pady=2)
 
         ttk.Label(
             self.display_frame,
@@ -322,6 +331,8 @@ class HX711App:
             return
         hx.set_scale(scale)
         hx.set_offset(offset)
+        hx.clear_tare()
+        self.tare_offset = 0.0
         self.hx = hx
 
         # Quick zero-drift check against stored calibration zero.
@@ -379,7 +390,7 @@ class HX711App:
 
     def _update_ui(self, reading: Reading):
         self.raw_var.set(f"{reading.raw}")
-        grams = abs(reading.grams)  # display-only absolute; one-directional load cell
+        grams = reading.grams  # allow signed values when tared
         try:
             decimals = max(0, int(self.decimals_var.get()))
         except Exception:
@@ -389,6 +400,12 @@ class HX711App:
         else:
             fmt = f"{{grams:0.{decimals}f}} g"
             self.grams_var.set(fmt.format(grams=grams))
+        # Newtons: grams -> kg -> N
+        try:
+            newtons = (grams / 1000.0) * 9.80665
+            self.newtons_var.set(f"{newtons:0.3f} N")
+        except Exception:
+            self.newtons_var.set("—")
         self.status_var.set(time.strftime("%H:%M:%S", time.localtime(reading.timestamp)))
 
     def _on_error(self, exc: Exception):
@@ -403,12 +420,12 @@ class HX711App:
 
         def do_tare():
             try:
-                self.hx.tare(times=max(3, int(self.samples_var.get())))
-                self.offset_var.set(str(self.hx.get_offset()))
+                samples = max(3, int(self.samples_var.get()))
+                tare_raw = self.hx.read_average(samples)
+                tare_offset = tare_raw - self.hx.get_offset()
+                self.hx.set_tare_offset(tare_offset)
+                self.tare_offset = tare_offset
                 self.status_var.set(self._t("status_tared"))
-                self._save_config(
-                    {"offset": self.hx.get_offset(), "last_zero_raw": self.hx.get_offset()}
-                )
             except Exception as exc:
                 self.status_var.set(self._t("status_error").format(err=exc))
 
@@ -452,6 +469,8 @@ class HX711App:
         time.sleep(0.2)
         offset = hx.read_average(samples)
         hx.set_offset(offset)
+        hx.clear_tare()
+        self.tare_offset = 0.0
         self.offset_var.set(str(offset))
         calibration_temp = self._read_cpu_temp()
 

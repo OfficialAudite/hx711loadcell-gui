@@ -32,6 +32,7 @@ class HX711:
         self.GAIN = 0
         self.OFFSET = 0
         self.SCALE = 1
+        self.TARE_OFFSET = 0  # additional, non-persisted offset from user tare
 
         self.PD_SCK = gpiozero.OutputDevice(pd_sck)
         self.DOUT = gpiozero.DigitalInputDevice(dout, pull_up=False)
@@ -66,6 +67,19 @@ class HX711:
     def get_offset(self) -> float:
         return self.OFFSET
 
+    def set_tare_offset(self, tare_offset: float):
+        """Store a transient tare offset without modifying calibration offset."""
+        self.TARE_OFFSET = tare_offset
+
+    def clear_tare(self):
+        self.TARE_OFFSET = 0
+
+    def get_tare_offset(self) -> float:
+        return self.TARE_OFFSET
+
+    def total_offset(self) -> float:
+        return self.OFFSET + self.TARE_OFFSET
+
     def read(self) -> int:
         while not (self.DOUT.is_active == 0):
             time.sleep(0.0001)
@@ -95,7 +109,7 @@ class HX711:
         return total / times
 
     def get_grams(self, times: int = 16) -> float:
-        value = self.read_average(times) - self.OFFSET
+        value = self.read_average(times) - self.total_offset()
         return value / self.SCALE
 
     def tare(self, times: int = 16):
@@ -170,7 +184,7 @@ class HX711ReaderThread:
         while not self._stop.is_set():
             try:
                 raw = self.hx.read_average(self.samples)
-                grams = (raw - self.hx.get_offset()) / max(self.hx.get_scale(), 1e-9)
+                grams = (raw - self.hx.total_offset()) / max(self.hx.get_scale(), 1e-9)
                 self.callback(Reading(raw=int(raw), grams=grams))
             except Exception as exc:  # hardware/IO errors
                 self.error_callback(exc)

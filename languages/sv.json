@@ -18,6 +18,7 @@
   "status_power_down": "Avstängd",
   "status_power_up": "Startad",
   "status_error": "Fel: {err}",
+  "newtons": "Newton",
   "btn_start": "Start",
   "btn_stop": "Stoppa",
   "btn_tare": "Nollställ",
