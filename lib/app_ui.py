@@ -300,6 +300,12 @@ class HX711App:
         if self.reader:
             self.reader.stop()
         self.reader = None
+        if self.hx:
+            try:
+                self.hx.close()
+            except Exception:
+                pass
+        self.hx = None
 
     def _on_reading(self, reading: Reading):
         self.root.after(0, self._update_ui, reading)
