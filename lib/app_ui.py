@@ -18,7 +18,13 @@ class HX711App:
         self.root = root
         self.config = load_config()
         self.lang_data = load_languages()
-        default_lang = "en" if "en" in self.lang_data else next(iter(self.lang_data))
+        config_lang = self.config.get("language")
+        if config_lang in self.lang_data:
+            default_lang = config_lang
+        elif "en" in self.lang_data:
+            default_lang = "en"
+        else:
+            default_lang = next(iter(self.lang_data))
         self.lang_var = tk.StringVar(value=default_lang)
         root.title(self._t("title"))
         root.attributes("-fullscreen", True)  # enable for kiosk
@@ -421,6 +427,7 @@ class HX711App:
         self.root.destroy()
 
     def _on_language_change(self):
+        self._save_config({"language": self.lang_var.get()})
         self._build_frames()
         if self.hx and self.reader:
             self.status_var.set(self._t("status_reading"))

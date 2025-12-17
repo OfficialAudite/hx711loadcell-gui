@@ -21,6 +21,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "samples": 8,
     "interval": 0.2,
     "known_weight": 1000.0,
+    "language": "en",
     "calibration_time": None,
     "calibration_temp": None,
     "calibration_weight": None,
