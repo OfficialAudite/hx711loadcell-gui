@@ -30,6 +30,15 @@ touch-friendly numpad, JSON-based i18n, and a reusable HX711 device module.
   - Language picker (large buttons; auto-lists `languages/*.json`)
   - Apply & Start, Stop, Tare, Calibrate, Power Up/Down, Quit, Back
 
+## Screenshots
+
+- Main view  
+  ![Main view](images/Yv8BK4YuD8H1nFFbBG2icidUJBiwU3DS.png)
+- Popup numpad  
+  ![Popup numpad](images/WyOTsATb5McOK7cJnfEDknec2A0gIZHa.png)
+- Settings  
+  ![Settings](images/No6GX36zjPiGbg0uS1jHR5gyvpa5kibU.png)
+
 ## Calibration (safer flow)
 
 1) In Settings, set pins/gain if needed. Enter a known weight in grams
