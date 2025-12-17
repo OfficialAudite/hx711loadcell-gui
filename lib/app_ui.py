@@ -422,7 +422,7 @@ class HX711App:
             try:
                 samples = max(3, int(self.samples_var.get()))
                 tare_raw = self.hx.read_average(samples)
-                tare_offset = tare_raw - self.hx.get_offset()
+                tare_offset = abs(tare_raw - self.hx.get_offset())
                 self.hx.set_tare_offset(tare_offset)
                 self.tare_offset = tare_offset
                 self.status_var.set(self._t("status_tared"))
