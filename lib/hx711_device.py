@@ -5,6 +5,7 @@ Separated for reuse in GUI and non-GUI contexts.
 
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
@@ -166,6 +167,8 @@ class HX711ReaderThread:
         self.error_callback = error_callback
         self._stop = threading.Event()
         self._thread: Optional[threading.Thread] = None
+        # lightweight smoothing buffer to reduce visible jitter without slowing updates
+        self._gram_buffer = deque(maxlen=3)
 
     def start(self):
         if self._thread and self._thread.is_alive():
@@ -187,9 +190,11 @@ class HX711ReaderThread:
                 raw_delta = abs(raw - self.hx.get_offset())
                 tare_delta = abs(self.hx.get_tare_offset())
                 grams = (raw_delta - tare_delta) / max(self.hx.get_scale(), 1e-9)
+                self._gram_buffer.append(grams)
+                grams_smoothed = sorted(self._gram_buffer)[len(self._gram_buffer) // 2]
                 elapsed = time.time() - t0
                 period = elapsed + self.interval  # approximate full cycle incl. sleep
-                self.callback(Reading(raw=int(raw), grams=grams, period_sec=period))
+                self.callback(Reading(raw=int(raw), grams=grams_smoothed, period_sec=period))
             except Exception as exc:  # hardware/IO errors
                 self.error_callback(exc)
                 time.sleep(self.interval)
