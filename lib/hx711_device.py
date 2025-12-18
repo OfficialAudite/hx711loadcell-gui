@@ -143,6 +143,7 @@ class Reading:
     raw: int
     grams: float
     timestamp: float = field(default_factory=time.time)
+    period_sec: Optional[float] = None
 
 
 class HX711ReaderThread:
@@ -180,12 +181,15 @@ class HX711ReaderThread:
 
     def _run(self):
         while not self._stop.is_set():
+            t0 = time.time()
             try:
                 raw = self.hx.read_average(self.samples)
                 raw_delta = abs(raw - self.hx.get_offset())
                 tare_delta = abs(self.hx.get_tare_offset())
                 grams = (raw_delta - tare_delta) / max(self.hx.get_scale(), 1e-9)
-                self.callback(Reading(raw=int(raw), grams=grams))
+                elapsed = time.time() - t0
+                period = elapsed + self.interval  # approximate full cycle incl. sleep
+                self.callback(Reading(raw=int(raw), grams=grams, period_sec=period))
             except Exception as exc:  # hardware/IO errors
                 self.error_callback(exc)
                 time.sleep(self.interval)

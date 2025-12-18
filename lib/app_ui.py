@@ -41,6 +41,7 @@ class HX711App:
         self.raw_var = tk.StringVar(value="—")
         self.grams_var = tk.StringVar(value="—")
         self.newtons_var = tk.StringVar(value="—")
+        self.hz_var = tk.StringVar(value="—")
         self.decimals_var = tk.StringVar(value=str(self.config.get("decimals", 2)))
         self.tare_offset = 0.0
 
@@ -163,6 +164,13 @@ class HX711App:
         ttk.Label(
             self.display_frame,
             textvariable=self.newtons_var,
+            style="Sub.TLabel",
+            anchor="center",
+        ).pack(pady=2)
+
+        ttk.Label(
+            self.display_frame,
+            textvariable=self.hz_var,
             style="Sub.TLabel",
             anchor="center",
         ).pack(pady=2)
@@ -406,6 +414,14 @@ class HX711App:
             self.newtons_var.set(f"{newtons:0.3f} N")
         except Exception:
             self.newtons_var.set("—")
+        try:
+            if reading.period_sec and reading.period_sec > 0:
+                hz = 1.0 / reading.period_sec
+                self.hz_var.set(f"{hz:0.2f} Hz")
+            else:
+                self.hz_var.set("—")
+        except Exception:
+            self.hz_var.set("—")
         self.status_var.set(time.strftime("%H:%M:%S", time.localtime(reading.timestamp)))
 
     def _on_error(self, exc: Exception):
