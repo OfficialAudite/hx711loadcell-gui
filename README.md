@@ -15,6 +15,8 @@ touch-friendly numpad, JSON-based i18n, and a reusable HX711 device module.
    `python main.py`
 4) Kiosk: fullscreen is on by default (set in `main.py` / `app_ui`).
 5) Optional desktop launcher on Pi: `bash scripts/install_desktop_entry.sh`
+6) Optional perf tuning on Pi (sets CPU governor to performance):  
+   `sudo bash scripts/optimize_pi.sh`
 
 ## UI overview (touch-friendly)
 
