@@ -5,6 +5,7 @@ Separated for reuse in GUI and non-GUI contexts.
 
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
@@ -158,21 +159,27 @@ class HX711ReaderThread:
         interval: float,
         callback: Callable[[Reading], None],
         error_callback: Callable[[Exception], None],
+        rolling_window: bool = False,
     ):
         self.hx = hx
         self.samples = samples
         self.interval = interval
         self.callback = callback
         self.error_callback = error_callback
+        self.rolling_window = rolling_window
         self._stop = threading.Event()
         self._thread: Optional[threading.Thread] = None
-        # no extra smoothing buffer; we trim outliers per batch using samples setting
+        # standard mode median buffer
+        self._gram_buffer = deque(maxlen=5)
+        # rolling mode buffer of raw samples
+        self._rolling_buffer = deque(maxlen=max(self.samples, 3))
 
     def start(self):
         if self._thread and self._thread.is_alive():
             return
         self._stop.clear()
-        self._thread = threading.Thread(target=self._run, daemon=True)
+        target = self._run_rolling if self.rolling_window else self._run_standard
+        self._thread = threading.Thread(target=target, daemon=True)
         self._thread.start()
 
     def stop(self):
@@ -180,28 +187,55 @@ class HX711ReaderThread:
         if self._thread:
             self._thread.join(timeout=1.5)
 
-    def _run(self):
+    def _run_standard(self):
         while not self._stop.is_set():
             t0 = time.time()
             try:
-                sample_count = max(self.samples, 1)
-                raw_samples = [self.hx.read() for _ in range(sample_count)]
-                if len(raw_samples) >= 3:
-                    sorted_raw = sorted(raw_samples)
-                    trimmed_raw = sorted_raw[1:-1]  # drop min and max
-                else:
-                    trimmed_raw = raw_samples
-                raw = sum(trimmed_raw) / max(len(trimmed_raw), 1)
+                raw = self.hx.read_average(self.samples)
                 raw_delta = abs(raw - self.hx.get_offset())
                 tare_delta = abs(self.hx.get_tare_offset())
                 grams = (raw_delta - tare_delta) / max(self.hx.get_scale(), 1e-9)
-                grams_smoothed = grams
+                self._gram_buffer.append(grams)
+                vals = list(self._gram_buffer)
+                grams_smoothed = sorted(vals)[len(vals) // 2] if vals else grams
                 elapsed = time.time() - t0
-                # Report raw per-sample cadence (independent of averaging count)
-                per_sample = elapsed / max(self.samples, 1)
-                period = per_sample
+                period = elapsed + self.interval  # include configured sleep like earlier behavior
                 self.callback(Reading(raw=int(raw), grams=grams_smoothed, period_sec=period))
             except Exception as exc:  # hardware/IO errors
+                self.error_callback(exc)
+                time.sleep(self.interval)
+                continue
+            time.sleep(self.interval)
+
+    def _run_rolling(self):
+        """
+        Rolling window: keep a buffer of raw readings across cycles, drop min/max,
+        average the middle, then convert to grams.
+        """
+        while not self._stop.is_set():
+            t0 = time.time()
+            try:
+                new_samples = max(1, min(2, self.samples))  # add up to 2 new readings per cycle
+                for _ in range(new_samples):
+                    self._rolling_buffer.append(self.hx.read())
+                while len(self._rolling_buffer) > max(self.samples, 3):
+                    self._rolling_buffer.popleft()
+
+                raw_vals = list(self._rolling_buffer)
+                if len(raw_vals) >= 3:
+                    sorted_raw = sorted(raw_vals)
+                    trimmed_raw = sorted_raw[1:-1]  # drop min and max
+                else:
+                    trimmed_raw = raw_vals
+                raw = sum(trimmed_raw) / max(len(trimmed_raw), 1) if trimmed_raw else 0
+                raw_delta = abs(raw - self.hx.get_offset())
+                tare_delta = abs(self.hx.get_tare_offset())
+                grams = (raw_delta - tare_delta) / max(self.hx.get_scale(), 1e-9)
+
+                elapsed = time.time() - t0
+                period = elapsed + self.interval
+                self.callback(Reading(raw=int(raw), grams=grams, period_sec=period))
+            except Exception as exc:
                 self.error_callback(exc)
                 time.sleep(self.interval)
                 continue

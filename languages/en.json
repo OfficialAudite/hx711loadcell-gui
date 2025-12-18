@@ -41,6 +41,8 @@
   "label_interval": "Interval (s)",
   "label_known_weight": "Known weight (g)",
   "label_decimals": "Decimals",
+  "label_rolling_window": "Rolling smoothing",
+  "label_rolling_window_on": "Use rolling window",
   "label_language": "Language / Språk",
   "invalid_input": "Check numeric fields.",
   "invalid_weight": "Known weight must be greater than zero.",

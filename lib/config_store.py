@@ -23,6 +23,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "known_weight": 1000.0,
     "decimals": 2,
     "language": "en",
+    "rolling_window": False,
     "calibration_time": None,
     "calibration_temp": None,
     "calibration_weight": None,

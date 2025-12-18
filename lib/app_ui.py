@@ -43,6 +43,7 @@ class HX711App:
         self.newtons_var = tk.StringVar(value="—")
         self.hz_var = tk.StringVar(value="—")
         self.decimals_var = tk.StringVar(value=str(self.config.get("decimals", 2)))
+        self.rolling_var = tk.BooleanVar(value=bool(self.config.get("rolling_window", False)))
         self.tare_offset = 0.0
 
         self.dout_var = tk.StringVar(value=str(self.config.get("dout", 5)))
@@ -252,6 +253,19 @@ class HX711App:
             ).grid(row=row, column=col_base + 2, sticky="w", pady=6, padx=(0, 10))
 
         rows_used = 1 + (len(inputs) + 1) // 2
+        ttk.Label(self.settings_frame, text=self._t("label_rolling_window")).grid(
+            row=rows_used, column=0, sticky="w", pady=8
+        )
+        rolling_chk = ttk.Checkbutton(
+            self.settings_frame,
+            variable=self.rolling_var,
+            text=self._t("label_rolling_window_on"),
+            onvalue=True,
+            offvalue=False,
+        )
+        rolling_chk.grid(row=rows_used, column=1, sticky="w", pady=8, padx=(0, 10))
+        rows_used += 1
+
         ttk.Label(self.settings_frame, text=self._t("label_language")).grid(
             row=rows_used, column=0, sticky="w", pady=8
         )
@@ -328,6 +342,7 @@ class HX711App:
             interval = max(0.05, float(self.interval_var.get()))
             known_weight = float(self.known_weight_var.get())
             decimals = max(0, int(self.decimals_var.get()))
+            rolling_window = bool(self.rolling_var.get())
         except ValueError:
             messagebox.showerror(self._t("hx_error"), self._t("invalid_input"))
             return
@@ -369,6 +384,7 @@ class HX711App:
                 "interval": interval,
                 "known_weight": known_weight,
                 "decimals": decimals,
+                "rolling_window": rolling_window,
             }
         )
 
@@ -378,6 +394,7 @@ class HX711App:
             interval=interval,
             callback=self._on_reading,
             error_callback=self._on_error,
+            rolling_window=rolling_window,
         )
         self.reader.start()
         self.status_var.set(self._t("status_reading"))

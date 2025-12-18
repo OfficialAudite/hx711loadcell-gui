@@ -41,6 +41,8 @@
   "label_interval": "Intervall (s)",
   "label_known_weight": "Känd vikt (g)",
   "label_decimals": "Decimaler",
+  "label_rolling_window": "Rullande utjämning",
+  "label_rolling_window_on": "Använd rullande fönster",
   "label_language": "Language / Språk",
   "invalid_input": "Kontrollera numeriska fält.",
   "invalid_weight": "Känd vikt måste vara större än noll.",
