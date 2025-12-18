@@ -193,7 +193,9 @@ class HX711ReaderThread:
                 self._gram_buffer.append(grams)
                 grams_smoothed = sorted(self._gram_buffer)[len(self._gram_buffer) // 2]
                 elapsed = time.time() - t0
-                period = elapsed + self.interval  # approximate full cycle incl. sleep
+                # Report raw per-sample cadence (independent of averaging count)
+                per_sample = elapsed / max(self.samples, 1)
+                period = per_sample
                 self.callback(Reading(raw=int(raw), grams=grams_smoothed, period_sec=period))
             except Exception as exc:  # hardware/IO errors
                 self.error_callback(exc)
