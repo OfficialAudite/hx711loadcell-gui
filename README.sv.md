@@ -30,6 +30,15 @@ knappbord, JSON-baserad i18n och återanvändbar HX711‑modul.
   - Språkval med stora knappar (`languages/*.json` autodetekteras)
   - Apply & Start, Stop, Nollställ, Kalibrera, Slå på/av, Avsluta, Tillbaka
 
+## Skärmdumpar
+
+- Huvudvy  
+  ![Huvudvy](images/Yv8BK4YuD8H1nFFbBG2icidUJBiwU3DS.png)
+- Popup-numpad  
+  ![Popup-numpad](images/WyOTsATb5McOK7cJnfEDknec2A0gIZHa.png)
+- Inställningar  
+  ![Inställningar](images/No6GX36zjPiGbg0uS1jHR5gyvpa5kibU.png)
+
 ## Kalibrering (säkrare)
 
 1) I Inställningar: sätt pinnar/gain vid behov. Ange känd vikt i gram
