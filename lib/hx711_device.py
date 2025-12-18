@@ -168,7 +168,8 @@ class HX711ReaderThread:
         self._stop = threading.Event()
         self._thread: Optional[threading.Thread] = None
         # lightweight smoothing buffer to reduce visible jitter without slowing updates
-        self._gram_buffer = deque(maxlen=3)
+        # median over last 5 samples (tune maxlen for more/less smoothing)
+        self._gram_buffer = deque(maxlen=5)
 
     def start(self):
         if self._thread and self._thread.is_alive():
