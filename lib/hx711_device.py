@@ -5,7 +5,6 @@ Separated for reuse in GUI and non-GUI contexts.
 
 import threading
 import time
-from collections import deque
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
@@ -167,9 +166,7 @@ class HX711ReaderThread:
         self.error_callback = error_callback
         self._stop = threading.Event()
         self._thread: Optional[threading.Thread] = None
-        # lightweight smoothing buffer to reduce visible jitter without slowing updates
-        # median over last 5 samples (tune maxlen for more/less smoothing)
-        self._gram_buffer = deque(maxlen=5)
+        # no extra smoothing buffer; we trim outliers per batch using samples setting
 
     def start(self):
         if self._thread and self._thread.is_alive():
@@ -187,12 +184,18 @@ class HX711ReaderThread:
         while not self._stop.is_set():
             t0 = time.time()
             try:
-                raw = self.hx.read_average(self.samples)
+                sample_count = max(self.samples, 1)
+                raw_samples = [self.hx.read() for _ in range(sample_count)]
+                if len(raw_samples) >= 3:
+                    sorted_raw = sorted(raw_samples)
+                    trimmed_raw = sorted_raw[1:-1]  # drop min and max
+                else:
+                    trimmed_raw = raw_samples
+                raw = sum(trimmed_raw) / max(len(trimmed_raw), 1)
                 raw_delta = abs(raw - self.hx.get_offset())
                 tare_delta = abs(self.hx.get_tare_offset())
                 grams = (raw_delta - tare_delta) / max(self.hx.get_scale(), 1e-9)
-                self._gram_buffer.append(grams)
-                grams_smoothed = sorted(self._gram_buffer)[len(self._gram_buffer) // 2]
+                grams_smoothed = grams
                 elapsed = time.time() - t0
                 # Report raw per-sample cadence (independent of averaging count)
                 per_sample = elapsed / max(self.samples, 1)
