@@ -24,6 +24,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "decimals": 2,
     "language": "en",
     "rolling_window": False,
+    "fullscreen": False,
     "calibration_time": None,
     "calibration_temp": None,
     "calibration_weight": None,

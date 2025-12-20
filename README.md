@@ -1,36 +1,33 @@
-# HX711 Load Cell UI (Tkinter, Raspberry Pi)
+# HX711 Load Cell UI (Qt Quick, Raspberry Pi)
 
-Modern, fullscreen HX711 scale UI for Raspberry Pi with background readings,
-touch-friendly numpad, JSON-based i18n, and a reusable HX711 device module.
+Modern, macOS-inspired HX711 scale UI (Qt Quick / PySide6) with background
+readings, JSON-based i18n, and a reusable HX711 device module.
 
-## Quick start (Pi)
+## Quick start
 
-1) Install deps  
-   `sudo apt install python3-gpiozero python3-tk`
-2) Wire HX711 board  
-   - DT/DOUT -> chosen GPIO (default 5)  
-   - SCK -> chosen GPIO (default 6)  
-   - VCC -> 3V3/5V, GND -> GND
-3) Run  
-   `python main.py`
-4) Kiosk: fullscreen is on by default (set in `main.py` / `app_ui`).
-5) Optional desktop launcher on Pi: `bash scripts/install_desktop_entry.sh`
-6) Optional perf tuning on Pi (sets CPU governor to performance):  
-   `sudo bash scripts/optimize_pi.sh`
+- Install deps: `pip install -r requirements.txt`
+- Desktop (macOS-like Qt UI): `python main.py` (add `--demo` to preview without hardware)
+- Raspberry Pi with HX711:  
+  `sudo apt install python3-gpiozero`  
+  `pip install -r requirements.txt`  
+  Wire HX711 (DT/DOUT -> GPIO 5, SCK -> GPIO 6, VCC -> 3V3/5V, GND -> GND)  
+  `python main.py`
+- Fullscreen (Qt): toggle green stoplight or press the platform fullscreen shortcut.
 
-## UI overview (touch-friendly)
+## UI overview (Qt Quick, macOS-inspired)
 
-- Display: very large grams (signed), Newtons, raw count, status clock, and a colored
-  calibration banner (green=ok, amber=warn, red=needs calibration).
-- Main buttons: Start / Stop / Tare / Settings.
-- Settings (two-column layout, readonly fields with on-screen numpad):
+- Clean main view with oversized grams, Newtons, raw count, Hz, and a pill-style
+  calibration banner (green/amber/red).
+- Primary actions: Start, Stop, Tare, Calibrate, Settings.
+- Right-edge drawer for settings (numeric fields stay simple, desktop-friendly):
   - Pins: DOUT, SCK; Gain (32/64/128)
   - Scale, Offset (persisted)
   - Samples (average count), Interval (seconds)
   - Known weight (grams) for calibration
   - Decimals displayed (0+)
-  - Language picker (large buttons; auto-lists `languages/*.json`)
-  - Apply & Start, Stop, Tare, Calibrate, Power Up/Down, Quit, Back
+  - Rolling-window smoothing toggle
+  - Save, Apply & Start
+- Demo mode (`--demo`) to try the UI without HX711 hardware.
 
 ## Screenshots
 
@@ -41,17 +38,15 @@ touch-friendly numpad, JSON-based i18n, and a reusable HX711 device module.
 - Settings  
   ![Settings](images/No6GX36zjPiGbg0uS1jHR5gyvpa5kibU.png)
 
-## Calibration (safer flow)
+## Calibration (simplified in Qt UI)
 
-1) In Settings, set pins/gain if needed. Enter a known weight in grams
+1) In Settings, set pins/gain if needed and enter a known weight in grams
    (e.g., 1000 for 1 kg).
-2) Tap **Calibrate**.  
-   - It tares (captures offset).  
-   - You’re prompted on a large dialog to place the known weight.  
-   - The measured delta is rechecked; if invalid/zero you get an error instead of saving.
-   - Scale and offset are stored on success.
-3) Tap **Apply & Start** (or Start on main) for live readings.
-4) On start, a quick zero-drift check warns (banner amber/red) if the stored zero has drifted.
+2) Place that weight on the scale, then tap **Calibrate** (main view).  
+   - The app zeroes, measures, computes scale, and stores offset/scale/time.
+   - If the measured delta is invalid/zero you’ll see an error and nothing is saved.
+3) Tap **Apply & Start** to resume live readings.
+4) The banner will warn (amber/red) if calibration is stale (age) or missing.
 
 ## Tare
 
@@ -94,9 +89,10 @@ reader.start()
 
 ## Project layout
 
-- `main.py` — entry point
+- `main.py` — entry point (Qt Quick)
+- `lib/qt_app.py` — Qt bridge + controller
 - `lib/hx711_device.py` — device + reader thread
-- `lib/app_ui.py` — Tk UI
+- `ui/MainView.qml` — Qt Quick UI
 - `languages/` — JSON translations (`en.json`, `sv.json`, add more)
 
 ## License

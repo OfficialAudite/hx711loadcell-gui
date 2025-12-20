@@ -1,34 +1,33 @@
-# HX711 vågcells‑UI (Tkinter, Raspberry Pi)
+# HX711 vågcells‑UI (Qt Quick, Raspberry Pi)
 
-Modern UI i helskärmsläge med bakgrundsläsning, touchvänligt numeriskt
-knappbord, JSON-baserad i18n och återanvändbar HX711‑modul.
+Modern, macOS-inspirerad UI (Qt Quick / PySide6) i helskärmsläge med
+bakgrundsläsning, JSON-baserad i18n och återanvändbar HX711‑modul.
 
-## Snabbstart (Pi)
+## Snabbstart
 
-1) Installera beroenden  
-   `sudo apt install python3-gpiozero python3-tk`
-2) Koppla HX711  
-   - DT/DOUT -> vald GPIO (standard 5)  
-   - SCK -> vald GPIO (standard 6)  
-   - VCC -> 3V3/5V, GND -> GND
-3) Kör  
-   `python main.py`
-4) Kiosk: helskärm är aktiverat som standard.
-5) (Valfritt) Skrivbordsstart på Pi: `bash scripts/install_desktop_entry.sh`
+- Installera beroenden: `pip install -r requirements.txt`
+- Skrivbord (Qt UI): `python main.py` (lägg till `--demo` för att prova utan hårdvara)
+- Raspberry Pi med HX711:  
+  `sudo apt install python3-gpiozero`  
+  `pip install -r requirements.txt`  
+  Koppla HX711 (DT/DOUT -> GPIO 5, SCK -> GPIO 6, VCC -> 3V3/5V, GND -> GND)  
+  `python main.py`
+- Helskärm (Qt): använd fönsterknapp eller systemets helskärmskommando.
 
-## UI-översikt (touch-vänlig)
+## UI-översikt (Qt Quick, macOS-inspirerad)
 
-- Display: mycket stort gramvärde (med tecken), Newton, råvärde, statustid och en färgad
-  kalibreringsbanderoll (grön=OK, bärnsten=varning, röd=kräver kalibrering).
-- Huvudknappar: Start / Stop / Nollställ / Inställningar.
-- Inställningar (två kolumner, skrivskyddade fält med skärmtangentbord):
+- Ren huvudvy med mycket stora gram, Newton, råvärde, Hz och en pillformad
+  kalibreringsindikator (grön/bärnsten/röd).
+- Primära knappar: Start, Stop, Nollställ, Kalibrera, Inställningar.
+- Inställningar i en högerpanel (desktop-vänlig):
   - Pinnar: DOUT, SCK; Gain (32/64/128)
   - Skala, Offset (sparas)
   - Samples (medelvärden), Intervall (sekunder)
   - Känd vikt (gram) för kalibrering
   - Decimaler som visas (0+)
-  - Språkval med stora knappar (`languages/*.json` autodetekteras)
-  - Apply & Start, Stop, Nollställ, Kalibrera, Slå på/av, Avsluta, Tillbaka
+  - Växling för "rolling window"-utjämning
+  - Spara, Apply & Start
+- Demoläge (`--demo`) för att testa UI utan HX711-hårdvara.
 
 ## Skärmdumpar
 
@@ -39,18 +38,15 @@ knappbord, JSON-baserad i18n och återanvändbar HX711‑modul.
 - Inställningar  
   ![Inställningar](images/No6GX36zjPiGbg0uS1jHR5gyvpa5kibU.png)
 
-## Kalibrering (säkrare)
+## Kalibrering (förenklad i Qt-UI)
 
 1) I Inställningar: sätt pinnar/gain vid behov. Ange känd vikt i gram
    (t.ex. 1000 för 1 kg).
-2) Tryck **Kalibrera**.  
-   - Tare körs först (nollställning).  
-   - En stor dialog ber om att lägga på vikten och bekräfta.  
-   - Det uppmätta delta-värdet dubbelkollas; om det är ogiltigt/0 avbryts
-     och inget sparas.  
-   - Skala och offset sparas vid lyckad mätning.
-3) Tryck **Apply & Start** (eller Start) för livevärden.
-4) Vid start görs en snabb noll-driftkontroll; banderollen varnar om nollan drivit.
+2) Lägg vikten på vågen och tryck **Kalibrera** (i huvudvyn).  
+   - Appen nollställer, mäter, beräknar skala och sparar offset/skala/tid.  
+   - Om mätningen är ogiltig sparas inget och ett fel visas.
+3) Tryck **Apply & Start** för att återgå till livevärden.
+4) Banderollen varnar (bärnsten/röd) om kalibrering saknas eller är gammal.
 
 ## Nollställ (Tare)
 
@@ -94,9 +90,10 @@ reader.start()
 
 ## Struktur
 
-- `main.py` — start
+- `main.py` — start (Qt Quick)
+- `lib/qt_app.py` — Qt-brygga + controller
 - `lib/hx711_device.py` — hårdvaru- och trådlogik
-- `lib/app_ui.py` — Tk UI
+- `ui/MainView.qml` — Qt Quick UI
 - `languages/` — JSON-översättningar (`en.json`, `sv.json`, fler kan läggas till)
 
 ## Licens
